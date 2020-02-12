@@ -48,7 +48,7 @@ void coordinator::start_simulation()
         }
         node *next_node = new node(new_ip, node_id, this);
 
-        cout << "Node \"" << i << "\" created with nodeid = \"" << node_id << "\" and ip = \"" << new_ip << "\"" << endl;
+        cout << "Node:\"" << i << "\" NodeID:\"" << node_id << "\" IP:\"" << new_ip << "\"" << endl;
 
         string starting_neighbour = this->sample_close_neighbour(new_ip);
 
@@ -109,15 +109,12 @@ string coordinator::sample_close_neighbour(string new_ip)
     {
         return "";
     }
-    else
-    {
-        size_t pos = lower_bound(this->ip_list.begin(), this->ip_list.end(), new_ip) - this->ip_list.begin();
-        if (pos >= this->ip_list.size())
-        {
-            pos--;
-        }
 
-        DEBUG("Neighbour pos = " << pos << " and neighbour = " << this->ip_list[pos]);
-        return upper_md5(this->ip_list[pos]);
+    size_t pos = lower_bound(this->ip_list.begin(), this->ip_list.end(), new_ip) - this->ip_list.begin();
+    if (pos >= this->ip_list.size())
+    {
+        pos--;
     }
+    // DEBUG("Neighbour pos = " << pos << " and neighbour = " << this->ip_list[pos]);
+    return upper_md5(this->ip_list[pos]);
 }

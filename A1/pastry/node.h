@@ -14,8 +14,7 @@ public:
     node(string, string, coordinator *);
     vector<msg_type> receive_send_msg(msg_type);
     msg_type join_network(string);
-    void initialize_data(node *, int);
-
+    void initialize_data(node *);
 private:
     string route(string);
     void add_node_data(node *);

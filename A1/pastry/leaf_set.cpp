@@ -20,36 +20,10 @@ leaf_set::leaf_set(string node_id)
 
 bool leaf_set::check_in_leaf_set(string target)
 {
+    assert(!incomplete());
+
     string left_extreme = "";
     string right_extreme = "";
-
-    // if (left_set.empty() || right_set.empty())
-    // {
-    //     return false;
-    // }
-
-    // if (left_set.empty())
-    // {
-    //     left_extreme = self_node_id;
-    // }
-    // else
-    // {
-    //     left_extreme = *left_set.begin();
-    // }
-
-    // if (right_set.empty())
-    // {
-    //     right_extreme = self_node_id;
-    // }
-    // else
-    // {
-    //     right_extreme = *(--right_set.end());
-    // }
-
-    // if (left_extreme == right_extreme)
-    // {
-    //     return false;
-    // }
 
     left_extreme = *left_set.begin();
     right_extreme = *(--right_set.end());
@@ -60,20 +34,6 @@ bool leaf_set::check_in_leaf_set(string target)
     }
 
     return false;
-
-    // if ((left_leaves.size() != 0 && target < left_leaves[0]) || (left_leaves.size() == 0 && target < self_node_id))
-    // {
-    //     return false;
-    // }
-
-    // int len = right_leaves.size();
-
-    // if ((right_leaves.size() != 0 && target > right_leaves[len - 1]) || (right_leaves.size() == 0 && target > self_node_id))
-    // {
-    //     return false;
-    // }
-
-    // return true;
 }
 
 string leaf_set::find_closest_leaf(string key)
@@ -116,9 +76,43 @@ string leaf_set::find_closest_leaf(string key)
     }
 
     return closest_node;
-    // Binary Search over leaves.
-    // DEBUG("leaf_set::find_closest_leaf INCOMPLETE FUNCTION");
-    // return "";
+}
+
+string leaf_set::find_closest_leaf2(string key)
+{
+    assert(key != self_node_id);
+
+    string min_dist = get_dist(key, self_node_id);
+    string closest_node = self_node_id;
+
+    set<string>::iterator itr;
+
+    if (key < self_node_id)
+    {
+        for (itr = left_set.begin(); itr != left_set.end(); ++itr)
+        {
+            string dist = get_dist(*itr, key);
+            if (dist < min_dist)
+            {
+                closest_node = *itr;
+                min_dist = dist;
+            }
+        }
+    }
+    else
+    {
+        for (itr = right_set.begin(); itr != right_set.end(); ++itr)
+        {
+            string dist = get_dist(*itr, key);
+            if (dist < min_dist)
+            {
+                closest_node = *itr;
+                min_dist = dist;
+            }
+        }
+    }
+
+    return closest_node;
 }
 
 bool leaf_set::incomplete()
@@ -129,6 +123,37 @@ bool leaf_set::incomplete()
     }
 
     return false;
+}
+
+string leaf_set::search_incomplete_set(string key)
+{
+
+    string closest_node = self_node_id;
+    string min_dist = get_dist(key, self_node_id);
+
+    set<string>::iterator itr;
+
+    for (itr = left_set.begin(); itr != left_set.end(); ++itr)
+    {
+        string dist = get_dist(*itr, key);
+        if (dist < min_dist)
+        {
+            closest_node = *itr;
+            min_dist = dist;
+        }
+    }
+
+    for (itr = right_set.begin(); itr != right_set.end(); ++itr)
+    {
+        string dist = get_dist(*itr, key);
+        if (dist < min_dist)
+        {
+            closest_node = *itr;
+            min_dist = dist;
+        }
+    }
+
+    return closest_node;
 }
 
 string leaf_set::search_complete(string key)
@@ -170,12 +195,36 @@ void leaf_set::search_complete(string key, string &closest_node, string &min_dis
     }
 }
 
+void leaf_set::search_complete2(string key, string &closest_node, string &min_dist, int min_prefix_len)
+{
+    set<string>::iterator itr;
+
+    for (itr = left_set.begin(); itr != left_set.end(); ++itr)
+    {
+        int prefix_len = get_common_prefix_len(key, *itr);
+        string dist = get_dist(*itr, key);
+        if (prefix_len >= min_prefix_len && dist < min_dist)
+        {
+            closest_node = *itr;
+            min_dist = dist;
+        }
+    }
+
+    for (itr = right_set.begin(); itr != right_set.end(); ++itr)
+    {
+        int prefix_len = get_common_prefix_len(key, *itr);
+        string dist = get_dist(*itr, key);
+        if (prefix_len >= min_prefix_len && dist < min_dist)
+        {
+            closest_node = *itr;
+            min_dist = dist;
+        }
+    }
+}
+
 void leaf_set::insert_node(string node_id)
 {
-    if (node_id == self_node_id)
-    {
-        DEBUG("ERROR CASE EQUAL IN leaf_set::insert_node");
-    }
+    assert(node_id != self_node_id);
 
     if (node_id < self_node_id)
     {
@@ -198,8 +247,9 @@ void leaf_set::insert_node(string node_id)
 void leaf_set::initialize_leaf_set(leaf_set *old_ls)
 {
     set<string>::iterator itr;
+    size_t initial_size = left_set.size() + right_set.size();
 
-    for (itr = left_set.begin(); itr != left_set.end(); ++itr)
+    for (itr = old_ls->left_set.begin(); itr != old_ls->left_set.end(); ++itr)
     {
         string new_node_id = *itr;
         if (new_node_id == self_node_id)
@@ -212,7 +262,7 @@ void leaf_set::initialize_leaf_set(leaf_set *old_ls)
         }
     }
     insert_node(old_ls->self_node_id);
-    for (itr = right_set.begin(); itr != right_set.end(); ++itr)
+    for (itr = old_ls->right_set.begin(); itr != old_ls->right_set.end(); ++itr)
     {
         string new_node_id = *itr;
         if (new_node_id == self_node_id)
@@ -224,35 +274,62 @@ void leaf_set::initialize_leaf_set(leaf_set *old_ls)
             insert_node(new_node_id);
         }
     }
+
+    size_t final_size = left_set.size() + right_set.size();
+
+    // cout << final_size - initial_size << " increase in size of leafset." << endl;
 }
 
-void leaf_set::add_inform_msgs(vector<msg_type> &replies)
+vector<string> leaf_set::get_leaves()
 {
+    vector<string> leaves;
+
     set<string>::iterator itr;
 
     for (itr = left_set.begin(); itr != left_set.end(); ++itr)
     {
-        msg_type inform_msg;
-
-        inform_msg.type = "inform";
-        inform_msg.sender_id = self_node_id;
-        inform_msg.target_id = *itr;
-        inform_msg.key = *itr;
-        inform_msg.value = "";
-
-        replies.push_back(inform_msg);
+        leaves.push_back(*itr);
     }
 
     for (itr = right_set.begin(); itr != right_set.end(); ++itr)
     {
-        msg_type inform_msg;
-
-        inform_msg.type = "inform";
-        inform_msg.sender_id = self_node_id;
-        inform_msg.target_id = *itr;
-        inform_msg.key = *itr;
-        inform_msg.value = "";
-
-        replies.push_back(inform_msg);
+        leaves.push_back(*itr);
     }
+    return leaves;
+}
+
+// void leaf_set::add_inform_msgs(vector<msg_type> &replies)
+// {
+//     set<string>::iterator itr;
+
+//     for (itr = left_set.begin(); itr != left_set.end(); ++itr)
+//     {
+//         msg_type inform_msg;
+
+//         inform_msg.type = "inform";
+//         inform_msg.sender_id = self_node_id;
+//         inform_msg.target_id = *itr;
+//         inform_msg.key = *itr;
+//         inform_msg.value = "";
+
+//         replies.push_back(inform_msg);
+//     }
+
+//     for (itr = right_set.begin(); itr != right_set.end(); ++itr)
+//     {
+//         msg_type inform_msg;
+
+//         inform_msg.type = "inform";
+//         inform_msg.sender_id = self_node_id;
+//         inform_msg.target_id = *itr;
+//         inform_msg.key = *itr;
+//         inform_msg.value = "";
+
+//         replies.push_back(inform_msg);
+//     }
+// }
+
+int leaf_set::size()
+{
+    return left_set.size() + right_set.size();
 }

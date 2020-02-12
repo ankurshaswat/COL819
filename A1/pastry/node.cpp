@@ -44,22 +44,21 @@ vector<msg_type> node::receive_send_msg(msg_type msg)
 
     DEBUG(this->node_id << " Received " << msg.type << " type msg from " << msg.sender_id << " Key " << msg.key);
 
-    // Received a join type message.
+    //* Received a join type message.
     if (msg.type == "join")
     {
-        // Need to route msg further.
+        //* Need to route msg further.
         string route_target = route(msg.key);
-        // DEBUG("Routing to " << route_target);
         if (route_target != "")
         {
             msg_type reply_msg;
 
-            // Reply to original node with join_ack (equivalent to returning state tables)
+            //* Reply to original node with join_ack (equivalent to returning state tables)
             reply_msg.type = "join_ack";
-            reply_msg.target_id = msg.key; // Replying to new node added
+            reply_msg.target_id = msg.key; //* Replying to new node added
             reply_msg.sender_id = this->node_id;
             reply_msg.key = msg.key;
-            reply_msg.value = msg.value; // State tables can be filled here. Instead doing with function calls.
+            reply_msg.value = msg.value; //* State tables can be filled here. Instead doing with function calls.
 
             replies.push_back(reply_msg);
 
@@ -77,40 +76,57 @@ vector<msg_type> node::receive_send_msg(msg_type msg)
         {
             msg_type reply_msg;
 
-            // Reply to original node with join_ack_final (equivalent to returning state tables)
+            //* Reply to original node with join_ack_final (equivalent to returning state tables)
             reply_msg.type = "join_ack_final";
-            reply_msg.target_id = msg.key; // Replying to new node added
+            reply_msg.target_id = msg.key; //* Replying to new node added
             reply_msg.sender_id = this->node_id;
             reply_msg.key = msg.key;
-            reply_msg.value = msg.value; // Can be filled here. Instead doing with function calls.
+            reply_msg.value = msg.value; //* State tables can be filled here. Instead doing with function calls.
 
             replies.push_back(reply_msg);
         }
-        // TODO: Add node data to tables...
     }
     else if (msg.type == "join_ack")
     {
-        // Add data from node to self.
-        initialize_data(coord->get_node(msg.sender_id), stoi(msg.value));
-        // DEBUG("node::receive_send_msg join_ack INCOMPLETE CASE");
+        //* Add data from node to self.
+        initialize_data(coord->get_node(msg.sender_id));
     }
     else if (msg.type == "join_ack_final")
     {
-        // Add data from this final node into self.
-        initialize_data(coord->get_node(msg.sender_id), stoi(msg.value));
+        //* Add data from this final node into self.
+        initialize_data(coord->get_node(msg.sender_id));
 
-        // TODO: Inform all nodes in leaf set of arrival.
-        this->lf_set->add_inform_msgs(replies);
-        // TODO: Inform neighbour node to add in neighbour set ?
-        // DEBUG("node::receive_send_msg " << msg.type << " INCOMPLETE CASE");
+        vector<string> leaves;
+        vector<string>::iterator itr;
+
+        // //* Query all leaves and collect tables.
+        // leaves = lf_set->get_leaves();
+        // for (itr = leaves.begin(); itr != leaves.end(); ++itr)
+        // {
+        //     initialize_data(coord->get_node(*itr));
+        // }
+
+        //* Inform all nodes in leaf set of arrival.
+        leaves = lf_set->get_leaves();
+        for (itr = leaves.begin(); itr != leaves.end(); ++itr)
+        {
+            msg_type inform_msg;
+
+            inform_msg.type = "inform";
+            inform_msg.sender_id = node_id;
+            inform_msg.target_id = *itr;
+            inform_msg.key = *itr;
+            inform_msg.value = "";
+
+            replies.push_back(inform_msg);
+        }
+        //?: Inform neighbour node to add in neighbour set ?
     }
     else if (msg.type == "inform")
     {
-        // Add node to all state tables.
+        //* Add node to all state tables.
         this->r_table->insert_node(msg.sender_id);
         this->lf_set->insert_node(msg.sender_id);
-
-        // DEBUG("node::receive_send_msg " << msg.type << " INCOMPLETE CASE");
     }
     else
     {
@@ -126,16 +142,17 @@ string node::route(string key)
 
     if (this->lf_set->incomplete())
     {
-        // Incomplete leaf set search all.
+        //* Incomplete leaf set search all.
+
+        // next_node = this->lf_set->search_incomplete_set(key);
         next_node = this->lf_set->search_complete(key);
         DEBUG("Incomplete leafset " << next_node);
     }
     else if (this->lf_set->check_in_leaf_set(key))
     {
-        // If target within range of leaf set
-        // Find closest node in leaf set as next node.
-        next_node = this->lf_set->find_closest_leaf(key);
+        //* If target within range of leaf set find closest node in leaf set as next node.
 
+        next_node = this->lf_set->find_closest_leaf(key);
         DEBUG("Closest Leaf in leafset " << next_node);
     }
     else
@@ -145,7 +162,7 @@ string node::route(string key)
 
         // Get closest match from routing table according to common prefix
         string routing_match = this->r_table->get_routing_match(len_common_prefix, key);
-        DEBUG("Routing match " << routing_match);
+        DEBUG("Routing Table entry " << routing_match);
 
         if (routing_match != "")
         {
@@ -181,12 +198,17 @@ string node::route(string key)
         next_node = "";
     }
 
-    cout << "Routing Message to \"" << next_node << "\"" << endl;
+    cout << "Routing Message to \"" << next_node << "\""
+         << " " << lf_set->size() << endl;
     return next_node;
 }
 
-void node::initialize_data(node *old_node, int hop_num)
+void node::initialize_data(node *old_node)
 {
+    // set<string> all_nodes = old_node->get_nodes();
     lf_set->initialize_leaf_set(old_node->lf_set);
     r_table->initialize_routing_table(old_node->r_table);
+
+    //? Add entries of lf set to rtable
+    //? Add entries of rtable to lfset
 }
