@@ -1,14 +1,14 @@
 #include <finger_table.h>
 
-finger_table::finger_table(string)
+node *finger_table::get_node(size_t num)
 {
+    return nodes[num];
 }
-node *finger_table::get_node(size_t)
+node *finger_table::get_start(size_t num)
 {
+    return starts[num];
 }
-node *finger_table::get_start(size_t)
+void finger_table::set_node(size_t num, node *node)
 {
-}
-void finger_table::set_node(size_t, node *)
-{
+    nodes[num] = node;
 }

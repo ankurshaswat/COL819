@@ -3,16 +3,39 @@
 
 #define NUM_LEAVES 4
 
-node::node(string node_id, string node_ip)
+node::node(string node_ip, size_t node_id)
 {
+    this->node_id = node_id;
+    this->node_ip = node_ip;
 }
 
-node *node::find_successor(node *)
+node *node::find_successor(size_t id)
 {
+    node *n_dash = find_predecessor(id);
+    return n_dash->successor;
 }
 
-node *node::find_predecessor(size_t)
+node *node::find_predecessor(size_t id)
 {
+    node *n_dash = this;
+    while (!(id > n_dash->node_id && id <= n_dash->successor->node_id))
+    {
+        n_dash = n_dash->closest_preceding_finger(id);
+    }
+
+    return n_dash;
+}
+
+node *node::closest_preceding_finger(size_t id)
+{
+    for (size_t i = NUM_LEAVES; i >= 1; i--)
+    {
+        if (ftable->get_node(i) > this && ftable->get_node(i)->node_id < id)
+        {
+            return ftable->get_node(i);
+        }
+    }
+    return this;
 }
 
 void node::join(node *new_node)
@@ -37,7 +60,7 @@ void node::join(node *new_node)
 void node::init_finger_table(node *new_node)
 {
     //* finger[1].node = new_node->find_successor(finger[1].start);
-    ftable->set_node(1, new_node->find_successor(ftable->get_start(1)));
+    ftable->set_node(1, new_node->find_successor(ftable->get_start(1)->node_id));
 
     predecessor = successor->predecessor;
     successor->predecessor = this;
@@ -51,7 +74,7 @@ void node::init_finger_table(node *new_node)
         else
         {
             // finger[i + 1].node = new_node->find_successor(finger[i + 1].start);
-            ftable->set_node(i + 1, new_node->find_successor(ftable->get_start(i + 1)));
+            ftable->set_node(i + 1, new_node->find_successor(ftable->get_start(i + 1)->node_id));
         }
     }
 }
