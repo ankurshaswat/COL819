@@ -212,3 +212,60 @@ void node::initialize_data(node *old_node)
     //? Add entries of lf set to rtable
     //? Add entries of rtable to lfset
 }
+
+string node::get(string key)
+{
+    size_t key_identifier = md5_upper(key);
+    return get_identifier(key_identifier);
+}
+
+string node::get_identifier(string key_identifier)
+{
+    string next_node_id = route(key_identifier);
+    if (next_node_id == this->node_id)
+    {
+        return retreive_data(key_identifier);
+    }
+    else
+    {
+        node *next_node = coord->get_node(next_node_id);
+        return next_node->get_identifier(key_identifier);
+    }
+}
+
+void node::put(string key, string val)
+{
+    string key_identifier = md5_upper(key);
+    put_identifier(key_identifier, val);
+}
+
+void node::put_identifier(string key_identifier, string val)
+{
+    string next_node_id = route(key_identifier);
+    if (next_node_id == this->node_id)
+    {
+        return store_data(key_identifier, val);
+    }
+    else
+    {
+        node *next_node = coord->get_node(next_node_id);
+        return next_node->put_identifier(key_identifier, val);
+    }
+}
+
+void node::delete_self()
+{
+    // node *succ = get_successor();
+
+    // unordered_map<size_t, string>::iterator itr;
+
+    // // Transfer all keys to next node
+    // for (itr = data_store.begin(); itr != data_store.end(); ++itr)
+    // {
+    //     succ->store_data((*itr).first, (*itr).second);
+    // }
+
+    // // Notify predecessor and successor of removal
+    // get_successor()->notify_removal(get_successor());
+    // predecessor->notify_removal(predecessor);
+}
