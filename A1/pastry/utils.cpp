@@ -10,7 +10,7 @@
 
 #include <utils.h>
 #include <iostream>
-#include <algorithm>    
+#include <algorithm>
 #include <md5.h>
 
 using namespace std;
@@ -133,8 +133,28 @@ string get_dist(string s1, string s2)
     return res;
 }
 
-string upper_md5(string inp) {
+string upper_md5(string inp)
+{
     string res = md5(inp);
-    transform(res.begin(), res.end(), res.begin(), ::toupper); 
+    transform(res.begin(), res.end(), res.begin(), ::toupper);
     return res;
+}
+
+string conv_to_string(char c)
+{
+    string s(1, c);
+    return s;
+    
+}
+
+string generate_random_string(int len = 10)
+{
+    string s;
+
+    for (int i = 0; i < len; i++)
+    {
+        s.append(conv_to_string(char(rand() % 256)));
+    }
+
+    return s;
 }

@@ -58,3 +58,21 @@ void neighbourhood_set::search_complete2(string key, string &closest_node, strin
         }
     }
 }
+
+vector<string> neighbourhood_set::get_neighbours()
+{
+    set<string>::iterator itr;
+    vector<string> res;
+
+    for (itr = neighbours.begin(); itr != neighbours.end(); ++itr)
+    {
+        res.push_back(*itr);
+    }
+
+    return res;
+}
+
+void neighbourhood_set::remove(string node_id)
+{
+    neighbours.erase(node_id);
+}

@@ -15,14 +15,18 @@
 
 using namespace std;
 
-node::node(string node_ip, string node_id, coordinator *coord)
+node::node(string node_ip, string node_id, coordinator *coord, bool enable_logs) : num_routes(0), node_ip(node_ip), node_id(node_id), coord(coord), enable_logs(enable_logs)
 {
     this->lf_set = new leaf_set(node_id);
     this->r_table = new routing_table(node_id);
     this->nb_set = new neighbourhood_set(node_id);
-    this->node_id = node_id;
-    this->node_ip = node_ip;
-    this->coord = coord;
+
+    if (enable_logs)
+    {
+        cout << "|----------------------|" << endl;
+        cout << "|S.No.|Target|Successor|" << endl;
+        cout << "|----------------------|" << endl;
+    }
 }
 
 msg_type node::join_network(string neighbour_id)
@@ -138,68 +142,86 @@ vector<msg_type> node::receive_send_msg(msg_type msg)
 
 string node::route(string key)
 {
-    string next_node = "";
+    string next_node;
 
-    if (this->lf_set->incomplete())
+    while (true)
     {
-        //* Incomplete leaf set search all.
 
-        // next_node = this->lf_set->search_incomplete_set(key);
-        next_node = this->lf_set->search_complete(key);
-        DEBUG("Incomplete leafset " << next_node);
-    }
-    else if (this->lf_set->check_in_leaf_set(key))
-    {
-        //* If target within range of leaf set find closest node in leaf set as next node.
+        next_node = "";
 
-        next_node = this->lf_set->find_closest_leaf(key);
-        DEBUG("Closest Leaf in leafset " << next_node);
-    }
-    else
-    {
-        // Getting common prefix for checking in routing table.
-        int len_common_prefix = get_common_prefix_len(key, this->node_id);
-
-        // Get closest match from routing table according to common prefix
-        string routing_match = this->r_table->get_routing_match(len_common_prefix, key);
-        DEBUG("Routing Table entry " << routing_match);
-
-        if (routing_match != "")
+        if (this->lf_set->incomplete())
         {
-            next_node = routing_match;
+            //* Incomplete leaf set search all.
+
+            // next_node = this->lf_set->search_incomplete_set(key);
+            next_node = this->lf_set->search_complete(key);
+            DEBUG("Incomplete leafset " << next_node);
+        }
+        else if (this->lf_set->check_in_leaf_set(key))
+        {
+            //* If target within range of leaf set find closest node in leaf set as next node.
+
+            next_node = this->lf_set->find_closest_leaf(key);
+            DEBUG("Closest Leaf in leafset " << next_node);
         }
         else
         {
-            string best_match = node_id;
-            string min_dist = get_dist(key, best_match);
-            int max_prefix_len = get_common_prefix_len(key, best_match);
+            // Getting common prefix for checking in routing table.
+            int len_common_prefix = get_common_prefix_len(key, this->node_id);
 
-            // Find closest nodes in all 3 data structures.
-            // string leaf_set_closest = this->lf_set->find_closest_leaf(len_common_prefix, key);
-            this->lf_set->search_complete(key, best_match, min_dist, max_prefix_len);
-            DEBUG("Rare case - after leafset " << best_match);
-            // string routing_table_closest = this->r_table->find_closest_node(len_common_prefix, key);
-            this->r_table->search_complete(key, best_match, min_dist, max_prefix_len);
-            DEBUG("Rare case - after routingTable " << best_match);
-            // string nb_set_closest = this->nb_set->find_closest_node(len_common_prefix, key);
-            this->nb_set->search_complete(key, best_match, min_dist, max_prefix_len);
-            DEBUG("Rare case - after nbSet " << best_match);
+            // Get closest match from routing table according to common prefix
+            string routing_match = this->r_table->get_routing_match(len_common_prefix, key);
+            DEBUG("Routing Table entry " << routing_match);
 
-            // vector<string> possibile_next_nodes{leaf_set_closest, routing_table_closest, nb_set_closest};
+            if (routing_match != "")
+            {
+                next_node = routing_match;
+            }
+            else
+            {
+                string best_match = node_id;
+                string min_dist = get_dist(key, best_match);
+                int max_prefix_len = get_common_prefix_len(key, best_match);
 
-            // Select the overall closest node as next node
-            // next_node = find_closest_node_util(key, possibile_next_nodes);
-            next_node = best_match;
+                // Find closest nodes in all 3 data structures.
+                // string leaf_set_closest = this->lf_set->find_closest_leaf(len_common_prefix, key);
+                this->lf_set->search_complete(key, best_match, min_dist, max_prefix_len);
+                DEBUG("Rare case - after leafset " << best_match);
+                // string routing_table_closest = this->r_table->find_closest_node(len_common_prefix, key);
+                this->r_table->search_complete(key, best_match, min_dist, max_prefix_len);
+                DEBUG("Rare case - after routingTable " << best_match);
+                // string nb_set_closest = this->nb_set->find_closest_node(len_common_prefix, key);
+                this->nb_set->search_complete(key, best_match, min_dist, max_prefix_len);
+                DEBUG("Rare case - after nbSet " << best_match);
+
+                // vector<string> possibile_next_nodes{leaf_set_closest, routing_table_closest, nb_set_closest};
+
+                // Select the overall closest node as next node
+                // next_node = find_closest_node_util(key, possibile_next_nodes);
+                next_node = best_match;
+            }
+        }
+
+        if ((next_node == node_id) || (next_node == "") || coord->check_exist(next_node))
+        {
+            break;
+        }
+        else
+        {
+            notify_delete(next_node);
         }
     }
 
     if (next_node == node_id)
     {
         next_node = "";
+        if (enable_logs)
+            cout << "|  " << ++num_routes << "  | " << key << "   | " << node_id << "(Self)  |  " << endl;
     }
+    else if (enable_logs)
+        cout << "|  " << ++num_routes << "  | " << key << "   | " << next_node << "  |  " << endl;
 
-    cout << "Routing Message to \"" << next_node << "\""
-         << " " << lf_set->size() << endl;
+    DEBUG("Routing Message to \"" << next_node << "\"");
     return next_node;
 }
 
@@ -215,14 +237,14 @@ void node::initialize_data(node *old_node)
 
 string node::get(string key)
 {
-    size_t key_identifier = md5_upper(key);
+    string key_identifier = upper_md5(key);
     return get_identifier(key_identifier);
 }
 
 string node::get_identifier(string key_identifier)
 {
     string next_node_id = route(key_identifier);
-    if (next_node_id == this->node_id)
+    if (next_node_id == this->node_id || next_node_id == "")
     {
         return retreive_data(key_identifier);
     }
@@ -235,14 +257,14 @@ string node::get_identifier(string key_identifier)
 
 void node::put(string key, string val)
 {
-    string key_identifier = md5_upper(key);
+    string key_identifier = upper_md5(key);
     put_identifier(key_identifier, val);
 }
 
 void node::put_identifier(string key_identifier, string val)
 {
     string next_node_id = route(key_identifier);
-    if (next_node_id == this->node_id)
+    if (next_node_id == this->node_id || next_node_id == "")
     {
         return store_data(key_identifier, val);
     }
@@ -255,17 +277,88 @@ void node::put_identifier(string key_identifier, string val)
 
 void node::delete_self()
 {
-    // node *succ = get_successor();
+    //* Inform all nodes of deletion
+    //* Routing table, leaf set, neighbourhood set
+    vector<string> node_ids = r_table->get_nodes();
+    for (size_t i = 0; i < node_ids.size(); i++)
+    {
+        if (coord->check_exist(node_ids[i]))
+        {
+            coord->get_node(node_ids[i])->notify_delete(node_id);
+        }
+    }
 
-    // unordered_map<size_t, string>::iterator itr;
+    node_ids = lf_set->get_leaves();
+    for (size_t i = 0; i < node_ids.size(); i++)
+    {
+        if (coord->check_exist(node_ids[i]))
+        {
+            coord->get_node(node_ids[i])->notify_delete(node_id);
+        }
+    }
 
-    // // Transfer all keys to next node
-    // for (itr = data_store.begin(); itr != data_store.end(); ++itr)
-    // {
-    //     succ->store_data((*itr).first, (*itr).second);
-    // }
+    node_ids = nb_set->get_neighbours();
+    for (size_t i = 0; i < node_ids.size(); i++)
+    {
+        if (coord->check_exist(node_ids[i]))
+        {
+            coord->get_node(node_ids[i])->notify_delete(node_id);
+        }
+    }
+}
 
-    // // Notify predecessor and successor of removal
-    // get_successor()->notify_removal(get_successor());
-    // predecessor->notify_removal(predecessor);
+void node::notify_delete(string node_id)
+{
+    // Remove from leaf set
+    string get_leaf_set = lf_set->remove(node_id);
+    // Fix leaf set if possible
+    if (get_leaf_set != "")
+    {
+        node *to_fetch_node_states = coord->get_node(get_leaf_set);
+        leaf_set *fetched_leaf_set = to_fetch_node_states->lf_set;
+        vector<string> leaves = fetched_leaf_set->get_leaves();
+        for (size_t i = 0; i < leaves.size(); i++)
+        {
+            if (leaves[i] == node_id || leaves[i] == this->node_id)
+            {
+                continue;
+            }
+            lf_set->insert_node(leaves[i]);
+        }
+    }
+
+    // Remove from routing table
+    bool found_and_removed = r_table->remove(node_id);
+    // Try to fix routing table
+    if (found_and_removed)
+    {
+        // TODO: Now need to fix by querying other rtables;
+    }
+
+    // Remove from neighbour set.
+    nb_set->remove(node_id);
+}
+
+string node::retreive_data(string key_identifier)
+{
+    if (data_store.find(key_identifier) == data_store.end())
+    {
+        return "";
+    }
+    else
+    {
+        return data_store[key_identifier];
+    }
+}
+
+void node::store_data(string key_identifier, string val)
+{
+    data_store[key_identifier] = val;
+}
+
+node::~node()
+{
+    delete lf_set;
+    delete r_table;
+    delete nb_set;
 }

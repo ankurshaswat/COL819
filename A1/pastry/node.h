@@ -6,24 +6,40 @@
 #include <neighbourhood_set.h>
 #include <utils.h>
 #include <coordinator.h>
+#include <unordered_map>
 
 class coordinator;
 class node
 {
 public:
-    node(string, string, coordinator *);
+    node(string node_ip, string node_id, coordinator * coord, bool enable_logs);
+    ~node();
+
     vector<msg_type> receive_send_msg(msg_type);
     msg_type join_network(string);
     void initialize_data(node *);
+    string get(string key);
+    string get_identifier(string key_identifier);
+    void put(string key, string val);
+    void put_identifier(string key_identifier, string val);
+    void delete_self();
+    void notify_delete(string node_id);
+
 private:
     string route(string);
     void add_node_data(node *);
+    string retreive_data(string key_identifier);
+    void store_data(string key_identifier, string val);
+    // void remove_deleted_node(string node_id);
 
+    size_t num_routes;
     leaf_set *lf_set;
     routing_table *r_table;
     neighbourhood_set *nb_set;
     string node_ip, node_id;
     coordinator *coord;
+    unordered_map<string, string> data_store;
+    bool enable_logs;
 };
 
 #endif

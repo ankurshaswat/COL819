@@ -16,6 +16,7 @@ string get_dist(string s1, string s2);
 char int_to_hex(int n);
 int hex_to_int(char c);
 string upper_md5(string);
+string generate_random_string(int);
 
 struct msg_type
 {

@@ -14,8 +14,10 @@ public:
     string find_closest_node(size_t, string);
     void insert_node(string node_id);
     void initialize_routing_table(routing_table *rtable);
-    void search_complete(string key, string &best_match, string &min_dist,int &);
-    void search_complete2(string key, string &best_match, string &min_dist,int);
+    void search_complete(string key, string &best_match, string &min_dist, int &);
+    void search_complete2(string key, string &best_match, string &min_dist, int);
+    vector<string> get_nodes();
+    bool remove(string node_id);
 
 private:
     string node_id;

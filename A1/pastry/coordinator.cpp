@@ -14,22 +14,23 @@
 #include <queue>
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 
-coordinator::coordinator(int num_nodes)
+coordinator::coordinator(int num_search_queries, int num_node_add_queries, int num_node_delete_queries, int num_data_add_queries, bool enable_logs, int log_node) : num_search_queries(num_search_queries), num_node_add_queries(num_node_add_queries), num_node_delete_queries(num_node_delete_queries), num_data_add_queries(num_data_add_queries), enable_logs(enable_logs), log_node(log_node)
 {
-    DEBUG("Num nodes in simulation = " << num_nodes);
-    this->num_nodes = num_nodes;
+    // DEBUG("Num nodes in simulation = " << num_nodes);
 }
 
 node *coordinator::get_node(string node_id)
 {
+    assert(node_id_map[node_id]);
     return node_map[node_id];
 }
 
 void coordinator::start_simulation()
 {
 
-    for (int i = 0; i < this->num_nodes; i++)
+    for (size_t i = 0; i < this->num_node_add_queries; i++)
     {
         string new_ip, node_id;
         while (true)
@@ -46,9 +47,19 @@ void coordinator::start_simulation()
                 break;
             }
         }
-        node *next_node = new node(new_ip, node_id, this);
 
-        cout << "Node:\"" << i << "\" NodeID:\"" << node_id << "\" IP:\"" << new_ip << "\"" << endl;
+        node *next_node;
+
+        if ((i + 1) == log_node)
+        {
+            next_node = new node(new_ip, node_id, this, enable_logs);
+        }
+        else
+        {
+            next_node = new node(new_ip, node_id, this, false);
+        }
+
+        DEBUG("Node:\"" << i << "\" NodeID:\"" << node_id << "\" IP:\"" << new_ip << "\"");
 
         string starting_neighbour = this->sample_close_neighbour(new_ip);
 
@@ -61,6 +72,64 @@ void coordinator::start_simulation()
         }
 
         this->handle_msgs();
+
+        num_nodes++;
+    }
+
+    for (size_t i = 0; i < num_data_add_queries; i++)
+    {
+        string data_title, value;
+        data_title = generate_random_string(10);
+        value = data_title + " val";
+
+        int node_number = rand() % node_list.size();
+        string node_id = node_list[node_number];
+        node *node = get_node(node_id);
+
+        node->put(data_title, value);
+        data.push_back(data_title);
+        num_data_elements++;
+    }
+
+    for (size_t i = 0; i < num_search_queries; i++)
+    {
+        cout << i << endl;
+        int data_num = rand() % data.size();
+        string data_title = data[data_num];
+
+        int node_number = rand() % node_list.size();
+        string node_id = node_list[node_number];
+        node *node = get_node(node_id);
+
+        node->get(data_title);
+    }
+
+    for (size_t i = 0; i < num_node_delete_queries; i++)
+    {
+        cout << i << endl;
+
+        int ip_number = rand() % ip_list.size();
+        string ip = ip_list[ip_number];
+        string node_id = upper_md5(ip);
+        node *node = get_node(node_id);
+
+        cout << node_id << endl;
+
+        // Delete this node
+        node->delete_self();
+        remove_node_data(ip, node_id);
+        delete node;
+    }
+
+    if (enable_logs)
+    {
+        cout << "Total number of nodes : " << num_nodes << "." << endl;
+        cout << "Total number of data elements : " << num_data_elements << "." << endl;
+        cout << "Total search queries : " << num_search_queries << "." << endl;
+        cout << "Total node add queries : " << num_node_add_queries << "." << endl;
+        cout << "Total node delete queries : " << num_node_delete_queries << "." << endl;
+        cout << "Total data add queries : " << num_data_add_queries << "." << endl
+             << endl;
     }
 }
 
@@ -97,10 +166,26 @@ void coordinator::insert_node_data(string ip, string node_id, node *new_node)
 {
     this->node_ip_map[ip] = true;
     this->ip_list.push_back(ip);
-
+    node_list.push_back(node_id);
     this->node_id_map[node_id] = true;
-
     this->node_map[node_id] = new_node;
+}
+
+void coordinator::remove_node_data(string ip, string node_id)
+{
+    node_ip_map.erase(ip);
+    node_id_map.erase(node_id);
+    node_map.erase(node_id);
+
+    ip_list.erase(remove(ip_list.begin(), ip_list.end(), ip), ip_list.end());
+    node_list.erase(remove(node_list.begin(), node_list.end(), node_id), node_list.end());
+
+    num_nodes--;
+}
+
+bool coordinator::check_exist(string node_id)
+{
+    return node_id_map[node_id];
 }
 
 string coordinator::sample_close_neighbour(string new_ip)

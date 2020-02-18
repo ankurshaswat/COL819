@@ -26,7 +26,7 @@ bool leaf_set::check_in_leaf_set(string target)
     string right_extreme = "";
 
     left_extreme = *left_set.begin();
-    right_extreme = *(--right_set.end());
+    right_extreme = *(prev(right_set.end()));
 
     if (target >= left_extreme && target <= right_extreme)
     {
@@ -239,7 +239,7 @@ void leaf_set::insert_node(string node_id)
         right_set.insert(node_id);
         if (right_set.size() > 16)
         {
-            right_set.erase(*--right_set.end());
+            right_set.erase(*prev(right_set.end()));
         }
     }
 }
@@ -247,7 +247,7 @@ void leaf_set::insert_node(string node_id)
 void leaf_set::initialize_leaf_set(leaf_set *old_ls)
 {
     set<string>::iterator itr;
-    size_t initial_size = left_set.size() + right_set.size();
+    // size_t initial_size = left_set.size() + right_set.size();
 
     for (itr = old_ls->left_set.begin(); itr != old_ls->left_set.end(); ++itr)
     {
@@ -275,7 +275,7 @@ void leaf_set::initialize_leaf_set(leaf_set *old_ls)
         }
     }
 
-    size_t final_size = left_set.size() + right_set.size();
+    // size_t final_size = left_set.size() + right_set.size();
 
     // cout << final_size - initial_size << " increase in size of leafset." << endl;
 }
@@ -332,4 +332,39 @@ vector<string> leaf_set::get_leaves()
 int leaf_set::size()
 {
     return left_set.size() + right_set.size();
+}
+
+string leaf_set::remove(string node_id)
+{
+    // Returns the node id of leaf set needed to complete the leaf set after removal.
+    assert(node_id != self_node_id);
+
+    if (node_id < self_node_id)
+    {
+        if (left_set.find(node_id) == left_set.end())
+            return "";
+        else
+        {
+            left_set.erase(node_id);
+
+            if (left_set.size() == 15)
+                return *left_set.begin();
+            else
+                return "";
+        }
+    }
+    else
+    {
+        if (right_set.find(node_id) == right_set.end())
+            return "";
+        else
+        {
+            right_set.erase(node_id);
+
+            if (right_set.size() == 15)
+                return *(prev(right_set.end()));
+            else
+                return "";
+        }
+    }
 }

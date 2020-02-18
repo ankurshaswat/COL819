@@ -23,12 +23,12 @@ public:
     string search_complete(string);
     string search_incomplete_set(string);
     void search_complete(string, string &, string &, int &);
-    void search_complete2(string, string &, string &,int);
+    void search_complete2(string, string &, string &, int);
     vector<string> get_leaves();
     int size();
+    string remove(string node_id);
 
 private:
-
     string self_node_id;
     // vector<string> left_leaves, right_leaves;
     set<string> left_set, right_set;

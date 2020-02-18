@@ -129,3 +129,55 @@ void routing_table::search_complete2(string key, string &closest_node, string &m
         }
     }
 }
+
+vector<string> routing_table::get_nodes()
+{
+    vector<vector<string>>::iterator itr_out;
+    vector<string>::iterator itr;
+
+    vector<string> all_entries;
+
+    for (itr_out = table.begin(); itr_out != table.end(); ++itr_out)
+    {
+        for (itr = (*itr_out).begin(); itr != (*itr_out).end(); ++itr)
+        {
+            if (*itr == "")
+            {
+                continue;
+            }
+            else
+            {
+                all_entries.push_back(*itr);
+            }
+        }
+    }
+
+    return all_entries;
+}
+
+
+bool routing_table::remove(string node_id)
+{
+    assert(node_id != this->node_id);
+
+    size_t len_common_prefix = get_common_prefix_len(node_id, this->node_id);
+    char next_char = node_id[len_common_prefix];
+    int next_char_int = hex_to_int(next_char);
+
+    while (table.size() < len_common_prefix + 1)
+    {
+        vector<string> new_vec;
+        new_vec.assign(16, "");
+        table.push_back(new_vec);
+    }
+
+    if (table[len_common_prefix][next_char_int] != "")
+    {
+        table[len_common_prefix][next_char_int] = "";
+        return true;
+    } else {
+        return false;
+    }
+
+    // TODO : Check what to do when 2 entries for routing table.
+}
