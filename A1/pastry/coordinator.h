@@ -4,15 +4,18 @@
 #include <queue>
 #include <unordered_map>
 #include <node.h>
+#include <fstream>
 
 class node;
 class coordinator
 {
 public:
-    coordinator(int, int, int, int, bool, int);
+    coordinator(int, int, int, int, bool, int, string log_name);
     void start_simulation();
     node *get_node(string);
     bool check_exist(string node_id);
+    ~coordinator();
+    void write_hop_num(int num_hops);
 
 private:
     void insert_node_data(string, string, node *);
@@ -29,6 +32,8 @@ private:
     size_t num_nodes, num_data_elements, num_search_queries, num_node_add_queries, num_node_delete_queries, num_data_add_queries;
     bool enable_logs;
     size_t log_node;
+    ofstream log_file;
+    string log_name;
 };
 
 #endif

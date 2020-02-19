@@ -16,8 +16,14 @@
 #include <iostream>
 #include <cassert>
 
-coordinator::coordinator(int num_search_queries, int num_node_add_queries, int num_node_delete_queries, int num_data_add_queries, bool enable_logs, int log_node) : num_search_queries(num_search_queries), num_node_add_queries(num_node_add_queries), num_node_delete_queries(num_node_delete_queries), num_data_add_queries(num_data_add_queries), enable_logs(enable_logs), log_node(log_node)
+coordinator::coordinator(int num_search_queries, int num_node_add_queries, int num_node_delete_queries, int num_data_add_queries, bool enable_logs, int log_node, string log_name) : num_search_queries(num_search_queries), num_node_add_queries(num_node_add_queries), num_node_delete_queries(num_node_delete_queries), num_data_add_queries(num_data_add_queries), enable_logs(enable_logs), log_node(log_node), log_name(log_name)
 {
+    log_file.open(log_name + "_before.txt");
+    // log_file_before.open(log_name + "_before");
+    // log_file_after.open(log_name + "_after");
+
+    // num_keys_file_before.open(log_name + "_before");
+    // num_keys_file_after.open(log_name + "_after");
     // DEBUG("Num nodes in simulation = " << num_nodes);
 }
 
@@ -93,7 +99,7 @@ void coordinator::start_simulation()
 
     for (size_t i = 0; i < num_search_queries; i++)
     {
-        cout << i << endl;
+        // cout << i << endl;
         int data_num = rand() % data.size();
         string data_title = data[data_num];
 
@@ -101,24 +107,61 @@ void coordinator::start_simulation()
         string node_id = node_list[node_number];
         node *node = get_node(node_id);
 
-        node->get(data_title);
+        string res = node->get(data_title);
+        // cout << res << endl;
     }
+
+    log_file.close();
+
+    ofstream key_pdf;
+    key_pdf.open(log_name + "_keys_before.txt");
+    for (size_t i = 0; i < node_list.size(); i++)
+    {
+        node *node = get_node(node_list[i]);
+        key_pdf << node->get_num_keys() << "\n";
+    }
+    key_pdf.close();
+
+    log_file.open(log_name + "_after.txt");
 
     for (size_t i = 0; i < num_node_delete_queries; i++)
     {
-        cout << i << endl;
+        // cout << i << endl;
 
         int ip_number = rand() % ip_list.size();
         string ip = ip_list[ip_number];
         string node_id = upper_md5(ip);
         node *node = get_node(node_id);
 
-        cout << node_id << endl;
+        num_data_elements -= node->get_num_keys();
+        // cout << node_id << endl;
 
         // Delete this node
         node->delete_self();
         remove_node_data(ip, node_id);
         delete node;
+    }
+
+    key_pdf.open(log_name + "_keys_after.txt");
+    for (size_t i = 0; i < node_list.size(); i++)
+    {
+        node *node = get_node(node_list[i]);
+        key_pdf << node->get_num_keys() << "\n";
+    }
+    key_pdf.close();
+
+    for (size_t i = 0; i < num_search_queries; i++)
+    {
+        // cout << i << endl;
+        int data_num = rand() % data.size();
+        string data_title = data[data_num];
+
+        int node_number = rand() % node_list.size();
+        string node_id = node_list[node_number];
+        node *node = get_node(node_id);
+
+        string res = node->get(data_title);
+        // cout << res << endl;
     }
 
     if (enable_logs)
@@ -202,4 +245,14 @@ string coordinator::sample_close_neighbour(string new_ip)
     }
     // DEBUG("Neighbour pos = " << pos << " and neighbour = " << this->ip_list[pos]);
     return upper_md5(this->ip_list[pos]);
+}
+
+coordinator::~coordinator()
+{
+    log_file.close();
+}
+
+void coordinator::write_hop_num(int num_hops)
+{
+    log_file << num_hops << "\n";
 }

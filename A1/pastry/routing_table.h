@@ -18,6 +18,8 @@ public:
     void search_complete2(string key, string &best_match, string &min_dist, int);
     vector<string> get_nodes();
     bool remove(string node_id);
+    int get_size();
+    vector<string> get_possible_fixers(int len_prefix, int next_char_int);
 
 private:
     string node_id;

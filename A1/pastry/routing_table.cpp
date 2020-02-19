@@ -155,7 +155,6 @@ vector<string> routing_table::get_nodes()
     return all_entries;
 }
 
-
 bool routing_table::remove(string node_id)
 {
     assert(node_id != this->node_id);
@@ -175,9 +174,33 @@ bool routing_table::remove(string node_id)
     {
         table[len_common_prefix][next_char_int] = "";
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 
     // TODO : Check what to do when 2 entries for routing table.
+}
+
+int routing_table::get_size()
+{
+    return table.size();
+}
+
+vector<string> routing_table::get_possible_fixers(int len_prefix, int next_char_int)
+{
+    vector<string> res;
+    if (table.size() >= len_prefix + 1)
+    {
+        for (size_t i = 0; i < 16; i++)
+        {
+            if (table[len_prefix][i] != "" && i != next_char_int)
+            {
+                res.push_back(table[len_prefix][i]);
+            }
+        }
+    }
+
+    return res;
 }

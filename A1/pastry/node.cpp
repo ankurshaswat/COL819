@@ -24,7 +24,7 @@ node::node(string node_ip, string node_id, coordinator *coord, bool enable_logs)
     if (enable_logs)
     {
         cout << "|----------------------|" << endl;
-        cout << "|S.No.|Target|Successor|" << endl;
+        cout << "|S.No.\t|Target\t|Successor\t|" << endl;
         cout << "|----------------------|" << endl;
     }
 }
@@ -216,10 +216,10 @@ string node::route(string key)
     {
         next_node = "";
         if (enable_logs)
-            cout << "|  " << ++num_routes << "  | " << key << "   | " << node_id << "(Self)  |  " << endl;
+            cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << node_id << "(Self)\t  |  " << endl;
     }
     else if (enable_logs)
-        cout << "|  " << ++num_routes << "  | " << key << "   | " << next_node << "  |  " << endl;
+        cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << next_node << "\t  |  " << endl;
 
     DEBUG("Routing Message to \"" << next_node << "\"");
     return next_node;
@@ -238,20 +238,21 @@ void node::initialize_data(node *old_node)
 string node::get(string key)
 {
     string key_identifier = upper_md5(key);
-    return get_identifier(key_identifier);
+    return get_identifier(key_identifier, 0);
 }
 
-string node::get_identifier(string key_identifier)
+string node::get_identifier(string key_identifier, int num_hops)
 {
     string next_node_id = route(key_identifier);
     if (next_node_id == this->node_id || next_node_id == "")
     {
+        coord->write_hop_num(num_hops);
         return retreive_data(key_identifier);
     }
     else
     {
         node *next_node = coord->get_node(next_node_id);
-        return next_node->get_identifier(key_identifier);
+        return next_node->get_identifier(key_identifier, num_hops + 1);
     }
 }
 
@@ -332,7 +333,43 @@ void node::notify_delete(string node_id)
     // Try to fix routing table
     if (found_and_removed)
     {
-        // TODO: Now need to fix by querying other rtables;
+        size_t len_common_prefix = get_common_prefix_len(node_id, this->node_id);
+        char next_char = node_id[len_common_prefix];
+        int next_char_int = hex_to_int(next_char);
+        // Now need to fix by querying other rtables;
+
+        bool fixed = false;
+        for (size_t i = len_common_prefix; i < r_table->get_size(); i++)
+        {
+            vector<string> fixer_ids = r_table->get_possible_fixers(i, next_char_int);
+            for (size_t j = 0; j < fixer_ids.size(); j++)
+            {
+                if (!coord->check_exist(fixer_ids[j]))
+                {
+                    continue;
+                }
+                routing_table *new_r_table = coord->get_node(fixer_ids[j])->r_table;
+                string new_node_id = r_table->get_routing_match(len_common_prefix, node_id);
+                if (new_node_id == "")
+                {
+                    continue;
+                }
+                else if (!coord->check_exist(new_node_id))
+                {
+                    continue;
+                }
+                else
+                {
+                    r_table->insert_node(new_node_id);
+                    fixed = true;
+                    break;
+                }
+            }
+            if (fixed)
+            {
+                break;
+            }
+        }
     }
 
     // Remove from neighbour set.
@@ -343,7 +380,7 @@ string node::retreive_data(string key_identifier)
 {
     if (data_store.find(key_identifier) == data_store.end())
     {
-        return "";
+        return "NOT FOUND";
     }
     else
     {
@@ -361,4 +398,9 @@ node::~node()
     delete lf_set;
     delete r_table;
     delete nb_set;
+}
+
+int node::get_num_keys()
+{
+    return data_store.size();
 }

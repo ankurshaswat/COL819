@@ -149,11 +149,14 @@ string conv_to_string(char c)
 
 string generate_random_string(int len = 10)
 {
+    string char_set = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+!@#$%^&*()_+{}:";
     string s;
 
     for (int i = 0; i < len; i++)
     {
-        s.append(conv_to_string(char(rand() % 256)));
+        char c = char_set[rand() % char_set.size()];
+        s.append(conv_to_string(c));
+        // s.append(conv_to_string(char(rand() % 128)));
     }
 
     return s;

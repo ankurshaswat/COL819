@@ -12,19 +12,20 @@ class coordinator;
 class node
 {
 public:
-    node(string node_ip, string node_id, coordinator * coord, bool enable_logs);
+    node(string node_ip, string node_id, coordinator *coord, bool enable_logs);
     ~node();
 
     vector<msg_type> receive_send_msg(msg_type);
     msg_type join_network(string);
     void initialize_data(node *);
     string get(string key);
-    string get_identifier(string key_identifier);
+    string get_identifier(string key_identifier, int num_hops);
     void put(string key, string val);
     void put_identifier(string key_identifier, string val);
     void delete_self();
     void notify_delete(string node_id);
-
+    int get_num_keys();
+    
 private:
     string route(string);
     void add_node_data(node *);
