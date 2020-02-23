@@ -6,14 +6,16 @@
 #include <utils.h>
 #include <vector>
 #include <unordered_map>
+#include <coordinator.h>
 
 using namespace std;
 
+class coordinator;
 class finger_table;
 class node
 {
 public:
-    node(string, size_t);
+    node(string node_ip, size_t node_id, coordinator *coord, bool enable_logs);
     void join(node *);
     void init_finger_table(node *);
     void update_others();
@@ -37,13 +39,16 @@ public:
     void put(size_t key, string val);
     node *get_successor();
     void notify_removal(node *);
+    int get_num_keys();
 
 private:
     finger_table *ftable;
-    node *predecessor;
+    size_t predecessor;
     size_t node_id;
     string node_ip;
     unordered_map<size_t, string> data_store;
+    coordinator *coord;
+    bool enable_logs;
 };
 
 #endif

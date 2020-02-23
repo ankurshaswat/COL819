@@ -16,5 +16,8 @@ struct msg_type
 
 string get_random_ip();
 size_t hash_custom(string);
+string generate_random_string(int);
+bool in_range(size_t target, size_t lower_lim, size_t upper_lim);
+size_t circular_subtract(size_t a, size_t b);
 
 #endif

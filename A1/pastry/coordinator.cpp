@@ -19,12 +19,6 @@
 coordinator::coordinator(int num_search_queries, int num_node_add_queries, int num_node_delete_queries, int num_data_add_queries, bool enable_logs, int log_node, string log_name) : num_search_queries(num_search_queries), num_node_add_queries(num_node_add_queries), num_node_delete_queries(num_node_delete_queries), num_data_add_queries(num_data_add_queries), enable_logs(enable_logs), log_node(log_node), log_name(log_name)
 {
     log_file.open(log_name + "_before.txt");
-    // log_file_before.open(log_name + "_before");
-    // log_file_after.open(log_name + "_after");
-
-    // num_keys_file_before.open(log_name + "_before");
-    // num_keys_file_after.open(log_name + "_after");
-    // DEBUG("Num nodes in simulation = " << num_nodes);
 }
 
 node *coordinator::get_node(string node_id)
