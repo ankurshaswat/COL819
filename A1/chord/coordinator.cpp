@@ -38,6 +38,11 @@ bool coordinator::check_free_node_id(size_t node_id)
     return !this->node_id_map[node_id];
 }
 
+bool coordinator::check_exist(size_t node_id)
+{
+    return !check_free_node_id(node_id);
+}
+
 void coordinator::insert_node_data(string ip, size_t node_id, node *new_node)
 {
     this->node_ip_map[ip] = true;
@@ -143,7 +148,8 @@ void coordinator::start_simulation()
         else
         {
             size_t starting_neighbour = this->sample_node();
-            while(starting_neighbour == node_id) {
+            while (starting_neighbour == node_id)
+            {
                 starting_neighbour = this->sample_node();
             }
             next_node->join(node_map[starting_neighbour]);
@@ -166,7 +172,7 @@ void coordinator::start_simulation()
         data.push_back(data_title);
         num_data_elements++;
 
-        DEBUG("Data put :\"" << i << "\"");
+        // DEBUG("Data put :\"" << i << "\"");
     }
 
     for (size_t i = 0; i < num_search_queries; i++)
@@ -235,6 +241,8 @@ void coordinator::start_simulation()
 
         string res = node->get(data_title);
         // cout << res << endl;
+        DEBUG("Data search :\"" << i << "\" Res:\"" << res << "\"");
+
     }
 
     if (enable_logs)

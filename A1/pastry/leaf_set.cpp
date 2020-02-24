@@ -13,6 +13,8 @@
 #include <iostream>
 #include <cassert>
 
+#define L 16
+
 leaf_set::leaf_set(string node_id)
 {
     this->self_node_id = node_id;
@@ -117,7 +119,7 @@ string leaf_set::find_closest_leaf2(string key)
 
 bool leaf_set::incomplete()
 {
-    if (left_set.size() < 16 || right_set.size() < 16)
+    if (left_set.size() < (L / 2) || right_set.size() < (L / 2))
     {
         return true;
     }
@@ -229,7 +231,7 @@ void leaf_set::insert_node(string node_id)
     if (node_id < self_node_id)
     {
         left_set.insert(node_id);
-        if (left_set.size() > 16)
+        if (left_set.size() > (L / 2))
         {
             left_set.erase(*left_set.begin());
         }
@@ -237,7 +239,7 @@ void leaf_set::insert_node(string node_id)
     else
     {
         right_set.insert(node_id);
-        if (right_set.size() > 16)
+        if (right_set.size() > (L / 2))
         {
             right_set.erase(*prev(right_set.end()));
         }
@@ -347,7 +349,7 @@ string leaf_set::remove(string node_id)
         {
             left_set.erase(node_id);
 
-            if (left_set.size() == 15)
+            if (left_set.size() == (L / 2 - 1))
                 return *left_set.begin();
             else
                 return "";
@@ -361,7 +363,7 @@ string leaf_set::remove(string node_id)
         {
             right_set.erase(node_id);
 
-            if (right_set.size() == 15)
+            if (right_set.size() == (L / 2 - 1))
                 return *(prev(right_set.end()));
             else
                 return "";

@@ -15,7 +15,8 @@
 
 using namespace std;
 
-#define NUM_LEAVES 4
+// #define NUM_LEAVES 4
+#define NUM_LEAVES 32
 
 node::node(string node_ip, size_t node_id, coordinator *coord, bool enable_logs) : node_id(node_id), node_ip(node_ip), coord(coord), enable_logs(enable_logs)
 {
@@ -29,9 +30,9 @@ node *node::get_successor()
 
 node *node::find_successor(size_t id)
 {
-    DEBUG("Finding pred for " << id);
+    // DEBUG("Finding pred for " << id);
     node *n_dash = find_predecessor(id);
-    DEBUG("Found pred " << n_dash->node_id);
+    // DEBUG("Found pred " << n_dash->node_id);
     return n_dash->get_successor();
 }
 
@@ -46,10 +47,10 @@ node *node::find_predecessor(size_t id)
 
     node *n_dash = this;
 
-    if (this->node_id == this->get_successor()->node_id)
-    {
-        return coord->get_node(predecessor);
-    }
+    // if (this->node_id == this->get_successor()->node_id)
+    // {
+    //     return coord->get_node(predecessor);
+    // }
 
     // while (!(id > n_dash->node_id && id <= n_dash->get_successor()->node_id))
     while (!(id == n_dash->get_successor()->node_id || in_range(id, n_dash->node_id, n_dash->get_successor()->node_id)))
@@ -62,33 +63,45 @@ node *node::find_predecessor(size_t id)
         // {
         //     return n_dash;
         // }
-        node *new_finger = n_dash->closest_preceding_finger(id);
-        if (new_finger == n_dash)
+        size_t new_finger_id = n_dash->closest_preceding_finger(id);
+
+        while (!coord->check_exist(new_finger_id))
+        {
+            n_dash->fix_fingers();
+            new_finger_id = n_dash->closest_preceding_finger(id);
+        }
+
+        if (new_finger_id == n_dash->node_id)
         {
             break;
         }
-        n_dash = new_finger;
-    }
 
+        n_dash = coord->get_node(new_finger_id);
+    }
     return n_dash;
 }
 
-node *node::closest_preceding_finger(size_t id)
+size_t node::closest_preceding_finger(size_t id)
 {
-    DEBUG("Finding closest preceding finger " << id);
+    // DEBUG("Finding closest preceding finger " << id);
     // if (id == this->node_id)
     // {
     //     return coord->get_node(predecessor);
     // }
     for (size_t i = NUM_LEAVES; i >= 1; i--)
     {
+        // if (!coord->check_exist(ftable->get_node(i)))
+        // {
+        //     ftable->set_node(i, find_successor(ftable->get_start(i))->node_id);
+        // }
         // if (ftable->get_node(i) > this && ftable->get_node(i)->node_id < id)
         if (in_range(ftable->get_node(i), this->node_id, id))
         {
-            return coord->get_node(ftable->get_node(i));
+            // return coord->get_node(ftable->get_node(i));
+            return ftable->get_node(i);
         }
     }
-    return this;
+    return this->node_id;
 }
 
 void node::join(node *existing_node)
@@ -147,9 +160,9 @@ void node::update_others()
     for (size_t i = 1; i <= NUM_LEAVES; i++)
     {
         size_t sub_res = circular_subtract(node_id, pow(2, i - 1));
-        DEBUG("Finding pred to update for " << sub_res);
+        // DEBUG("Finding pred to update for " << sub_res);
         node *p = find_predecessor(sub_res);
-        DEBUG("Found pred " << p->node_id);
+        // DEBUG("Found pred " << p->node_id);
         if (p == this)
         {
             continue;
@@ -213,37 +226,31 @@ int node::get_num_keys()
 
 void node::notify_removal(node *removed_node)
 {
-    // if (removed_node == get_successor())
-    // {
-    //     ftable->set_node(1, removed_node->get_successor());
-    // }
-    // else if (removed_node == this->predecessor)
-    // {
-    //     this->predecessor = removed_node->predecessor;
-    // }
-    // else
-    // {
-    DEBUG("node::notify_removal UNFINISHED CASE");
-    // }
+    if (removed_node == get_successor())
+    {
+        //* Successor is getting removed
+        ftable->set_node(1, removed_node->get_successor()->node_id);
+    }
+    else if (removed_node->node_id == this->predecessor)
+    {
+        //* Predecessor is getting removed
+        this->predecessor = removed_node->predecessor;
+    }
+    else
+    {
+        DEBUG("node::notify_removal UNKNOWN CASE");
+    }
 }
 
 void node::delete_self()
 {
-    DEBUG("node::delete_self UNFINISHED CASE");
+    node *succ = get_successor();
 
-    // node *succ = get_successor();
+    //* Notify predecessor and successor of removal
+    get_successor()->notify_removal(this);
 
-    // unordered_map<size_t, string>::iterator itr;
-
-    // // Transfer all keys to next node
-    // for (itr = data_store.begin(); itr != data_store.end(); ++itr)
-    // {
-    //     succ->store_data((*itr).first, (*itr).second);
-    // }
-
-    // // Notify predecessor and successor of removal
-    // get_successor()->notify_removal(get_successor());
-    // predecessor->notify_removal(predecessor);
+    node *p = coord->get_node(predecessor);
+    p->notify_removal(this);
 }
 
 string node::get(string key)
@@ -287,5 +294,13 @@ void node::put(size_t key, string val)
     {
         DEBUG("Forwarding put request to " << successor->node_id << " for " << key << " " << val);
         return successor->put(key, val);
+    }
+}
+
+void node::fix_fingers()
+{
+    for (size_t i = 2; i <= NUM_LEAVES; i++)
+    {
+        ftable->set_node(i, find_successor(ftable->get_start(i))->node_id);
     }
 }

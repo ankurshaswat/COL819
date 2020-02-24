@@ -17,6 +17,10 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 
+    // string ip = get_random_ip();
+    // string hash = upper_md5(ip);
+    // cout << ip << " " << hash << endl;
+
     int num_node_add_queries = atoi(argv[1]);
     int num_node_delete_queries = num_node_add_queries / 2;
     int num_data_add_queries = atoi(argv[2]);

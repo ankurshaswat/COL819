@@ -28,7 +28,7 @@ public:
     bool operator<=(const node &);
     bool operator>(const node &);
     bool operator>=(const node &);
-    node *closest_preceding_finger(size_t id);
+    size_t closest_preceding_finger(size_t id);
     // vector<msg_type> receive_send_msg(msg_type);
     string retreive_data(size_t key);
     void store_data(size_t key, string val);
@@ -40,6 +40,7 @@ public:
     node *get_successor();
     void notify_removal(node *);
     int get_num_keys();
+    void fix_fingers();
 
 private:
     finger_table *ftable;

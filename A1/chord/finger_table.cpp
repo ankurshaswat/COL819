@@ -14,9 +14,10 @@
 
 using namespace std;
 
-#define NUM_LEAVES 4
-// #define limit 4294967296U
-#define limit 16U
+// #define NUM_LEAVES 4
+#define NUM_LEAVES 32
+// #define limit 16U
+#define limit 4294967296U
 
 finger_table::finger_table(size_t node_id) : node_id(node_id)
 {

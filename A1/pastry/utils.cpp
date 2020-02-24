@@ -11,9 +11,11 @@
 #include <utils.h>
 #include <iostream>
 #include <algorithm>
-#include <md5.h>
 
 using namespace std;
+
+#define NUM_DIGITS 8
+#define limit 4294967296U
 
 string get_random_ip()
 {
@@ -53,7 +55,7 @@ int get_common_prefix_len(string s1, string s2)
 string find_closest_node_util(string target, vector<string> nodes)
 {
     string closest_node = "";
-    string lowest_hex_distance = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+    string lowest_hex_distance(NUM_DIGITS, 'F');
     vector<string>::iterator itr;
 
     for (itr = nodes.begin(); itr != nodes.end(); ++itr)
@@ -101,7 +103,7 @@ string get_dist(string s1, string s2)
 {
     string greater, smaller;
 
-    string res = "00000000000000000000000000000000";
+    string res(NUM_DIGITS, '0');
 
     if (s1 < s2)
     {
@@ -116,7 +118,7 @@ string get_dist(string s1, string s2)
 
     int carry = 0;
 
-    for (int i = 31; i >= 0; i--)
+    for (int i = NUM_DIGITS - 1; i >= 0; i--)
     {
         if (hex_to_int(greater[i]) + carry < hex_to_int(smaller[i]))
         {
@@ -135,19 +137,38 @@ string get_dist(string s1, string s2)
 
 string upper_md5(string inp)
 {
-    string res = md5(inp);
-    transform(res.begin(), res.end(), res.begin(), ::toupper);
-    return res;
+    size_t string_hash = hash<string>{}(inp);
+    string_hash = string_hash % limit;
+
+    string final = "";
+
+    while (string_hash > 0)
+    {
+        int next_digit = string_hash % 16;
+        string_hash /= 16;
+        final.push_back(int_to_hex(next_digit));
+    }
+
+    while (final.length() < NUM_DIGITS)
+    {
+        final.push_back('0');
+    }
+
+    reverse(final.begin(), final.end());
+
+    // string res = md5(inp);
+    // transform(res.begin(), res.end(), res.begin(), ::toupper);
+    // return res;
+    return final;
 }
 
 string conv_to_string(char c)
 {
     string s(1, c);
     return s;
-    
 }
 
-string generate_random_string(int len = 10)
+string generate_random_string(int len)
 {
     string char_set = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+!@#$%^&*()_+{}:";
     string s;
