@@ -44,3 +44,15 @@ void finger_table::set_node(size_t num, size_t node)
     DEBUG("Updating finger table " << node_id << " row " << num << " from " << nodes[num - 1] << " to " << node);
     nodes[num - 1] = node;
 }
+
+void finger_table::print_finger_table()
+{
+    cout << "|-----------------------------------------|" << endl;
+    cout << "|S.No.\t| Target        | Successor       |" << endl;
+    cout << "|-----------------------------------------|" << endl;
+    for (int i = 1; i <= NUM_LEAVES; i++)
+    {
+        cout << "|  " << i << "\t| " << starts[i - 1] << "\t\t| Node " << nodes[i - 1] << "  |  " << endl;
+    }
+    cout << "|-----------------------------------------|" << endl;
+}

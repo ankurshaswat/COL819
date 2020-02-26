@@ -34,3 +34,5 @@
 .vscode
 A1/pastry/logs/*
 A1/chord/logs/*
+A1/python_scripts/env/
+A1/python_scripts/graphs/*

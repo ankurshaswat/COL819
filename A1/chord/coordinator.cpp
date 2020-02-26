@@ -158,6 +158,22 @@ void coordinator::start_simulation()
         num_nodes++;
     }
 
+    if (enable_logs)
+    {
+
+        // * Print routing tables
+        // for (size_t i = 0; i < node_list.size(); i++)
+        // {
+        //     string node_2_log_id = node_list[i];
+        //     node *node_2_log = node_map[node_2_log_id];
+        //     node_2_log->print_routing_table();
+        // }
+
+        size_t node_2_log_id = node_list[log_node];
+        node *node_2_log = node_map[node_2_log_id];
+        node_2_log->print_finger_table();
+    }
+
     for (size_t i = 0; i < num_data_add_queries; i++)
     {
         string data_title, value;
@@ -242,7 +258,6 @@ void coordinator::start_simulation()
         string res = node->get(data_title);
         // cout << res << endl;
         DEBUG("Data search :\"" << i << "\" Res:\"" << res << "\"");
-
     }
 
     if (enable_logs)
@@ -255,4 +270,9 @@ void coordinator::start_simulation()
         cout << "Total data add queries : " << num_data_add_queries << "." << endl
              << endl;
     }
+}
+
+void coordinator::write_hop_num(int num_hops)
+{
+    log_file << num_hops << "\n";
 }

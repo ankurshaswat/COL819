@@ -15,18 +15,18 @@
 
 using namespace std;
 
-node::node(string node_ip, string node_id, coordinator *coord, bool enable_logs) : num_routes(0), node_ip(node_ip), node_id(node_id), coord(coord), enable_logs(enable_logs)
+node::node(string node_ip, string node_id, coordinator *coord) : num_routes(0), node_ip(node_ip), node_id(node_id), coord(coord)
 {
     this->lf_set = new leaf_set(node_id);
     this->r_table = new routing_table(node_id);
     this->nb_set = new neighbourhood_set(node_id);
 
-    if (enable_logs)
-    {
-        cout << "|----------------------|" << endl;
-        cout << "|S.No.\t|Target\t|Successor\t|" << endl;
-        cout << "|----------------------|" << endl;
-    }
+    // if (enable_logs)
+    // {
+    //     cout << "|----------------------|" << endl;
+    //     cout << "|S.No.\t|Target\t|Successor\t|" << endl;
+    //     cout << "|----------------------|" << endl;
+    // }
 }
 
 msg_type node::join_network(string neighbour_id)
@@ -215,11 +215,11 @@ string node::route(string key)
     if (next_node == node_id)
     {
         next_node = "";
-        if (enable_logs)
-            cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << node_id << "(Self)\t  |  " << endl;
+        // if (enable_logs)
+        // cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << node_id << "(Self)\t  |  " << endl;
     }
-    else if (enable_logs)
-        cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << next_node << "\t  |  " << endl;
+    // else if (enable_logs)
+    // cout << "|  " << ++num_routes << "\t  | " << key << "\t   | " << next_node << "\t  |  " << endl;
 
     DEBUG("Routing Message to \"" << next_node << "\"");
     return next_node;
@@ -403,4 +403,9 @@ node::~node()
 int node::get_num_keys()
 {
     return data_store.size();
+}
+
+void node::print_routing_table()
+{
+    r_table->print_routing_table();
 }

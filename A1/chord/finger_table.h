@@ -16,7 +16,8 @@ public:
     size_t get_node(size_t);
     size_t get_start(size_t);
     void set_node(size_t, size_t);
-
+    void print_finger_table();
+    
 private:
     vector<size_t> starts, nodes;
     // unordered_map<size_t, size_t> starts;

@@ -34,13 +34,14 @@ public:
     void store_data(size_t key, string val);
     void delete_self();
     string get(string key);
-    string get(size_t key);
+    string get(size_t key, int num_hops);
     void put(string key, string val);
     void put(size_t key, string val);
     node *get_successor();
     void notify_removal(node *);
     int get_num_keys();
     void fix_fingers();
+    void print_finger_table();
 
 private:
     finger_table *ftable;

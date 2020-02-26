@@ -12,7 +12,7 @@ class coordinator;
 class node
 {
 public:
-    node(string node_ip, string node_id, coordinator *coord, bool enable_logs);
+    node(string node_ip, string node_id, coordinator *coord);
     ~node();
 
     vector<msg_type> receive_send_msg(msg_type);
@@ -25,7 +25,8 @@ public:
     void delete_self();
     void notify_delete(string node_id);
     int get_num_keys();
-    
+    void print_routing_table();
+
 private:
     string route(string);
     void add_node_data(node *);

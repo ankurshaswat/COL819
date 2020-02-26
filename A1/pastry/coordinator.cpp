@@ -49,15 +49,7 @@ void coordinator::start_simulation()
         }
 
         node *next_node;
-
-        if ((i + 1) == log_node)
-        {
-            next_node = new node(new_ip, node_id, this, enable_logs);
-        }
-        else
-        {
-            next_node = new node(new_ip, node_id, this, false);
-        }
+        next_node = new node(new_ip, node_id, this);
 
         DEBUG("Node:\"" << i << "\" NodeID:\"" << node_id << "\" IP:\"" << new_ip << "\"");
 
@@ -74,6 +66,22 @@ void coordinator::start_simulation()
         this->handle_msgs();
 
         num_nodes++;
+    }
+
+    if (enable_logs)
+    {
+
+        // * Print routing tables
+        // for (size_t i = 0; i < node_list.size(); i++)
+        // {
+        //     string node_2_log_id = node_list[i];
+        //     node *node_2_log = node_map[node_2_log_id];
+        //     node_2_log->print_routing_table();
+        // }
+
+        string node_2_log_id = node_list[log_node];
+        node *node_2_log = node_map[node_2_log_id];
+        node_2_log->print_routing_table();
     }
 
     for (size_t i = 0; i < num_data_add_queries; i++)

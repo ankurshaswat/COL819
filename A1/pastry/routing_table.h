@@ -20,6 +20,7 @@ public:
     bool remove(string node_id);
     int get_size();
     vector<string> get_possible_fixers(int len_prefix, int next_char_int);
+    void print_routing_table();
 
 private:
     string node_id;

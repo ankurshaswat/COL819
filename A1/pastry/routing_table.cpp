@@ -204,3 +204,39 @@ vector<string> routing_table::get_possible_fixers(int len_prefix, int next_char_
 
     return res;
 }
+
+void routing_table::print_routing_table()
+{
+    cout << "Routing table. ID: " << node_id << endl
+         << endl;
+    vector<vector<string>>::iterator itr_out;
+    vector<string>::iterator itr;
+
+    vector<string> all_entries;
+
+    cout << "Len_prefix |";
+    for (int i = 0; i < 16; i++)
+    {
+        cout << "    " << int_to_hex(i) << "     |";
+    }
+    cout << endl;
+
+    int i = 0;
+    for (itr_out = table.begin(); itr_out != table.end(); ++itr_out)
+    {
+        cout << i++ << "          |";
+        for (itr = (*itr_out).begin(); itr != (*itr_out).end(); ++itr)
+        {
+            if (*itr == "")
+            {
+                cout << "    -     |";
+            }
+            else
+            {
+                cout << " " << *itr << " |";
+            }
+        }
+
+        cout << endl;
+    }
+}

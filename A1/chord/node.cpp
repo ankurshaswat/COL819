@@ -257,21 +257,41 @@ string node::get(string key)
 {
     size_t key_identifier = hash_custom(key);
     DEBUG("Get request received at " << node_id << " for " << key_identifier);
-    return get(key_identifier);
+    if (enable_logs)
+        cout << "Look up " << key_identifier << " :" << node_id;
+    return get(key_identifier, 0);
 }
 
-string node::get(size_t key)
+string node::get(size_t key, int num_hops)
 {
-    node *successor = find_successor(key);
-    if (successor == this)
+    if (!(key == this->get_successor()->node_id || in_range(key, this->node_id, this->get_successor()->node_id)))
     {
-        DEBUG("Retreiving  at " << node_id << " " << key);
-        return retreive_data(key);
+        // node *successor = find_successor(key);
+        size_t next_jump_id = closest_preceding_finger(key);
+        while (!coord->check_exist(next_jump_id))
+        {
+            fix_fingers();
+            next_jump_id = closest_preceding_finger(key);
+        }
+        node *next_jump = coord->get_node(next_jump_id);
+
+        if (enable_logs)
+            cout << " → " << next_jump->node_id;
+
+        DEBUG("Forwarding put request to " << next_jump->node_id << " for " << key << " " << val);
+        return next_jump->get(key, num_hops + 1);
     }
     else
     {
-        DEBUG("Forwarding get request to " << successor->node_id << " for " << key);
-        return successor->get(key);
+
+        node *successor = get_successor();
+        if (enable_logs)
+        {
+            cout << " → " << successor->node_id << endl;
+        }
+        coord->write_hop_num(num_hops + 1);
+        // DEBUG("Storing  at " << node_id << " " << key << " " << val);
+        return successor->retreive_data(key);
     }
 }
 
@@ -284,16 +304,24 @@ void node::put(string key, string val)
 
 void node::put(size_t key, string val)
 {
-    node *successor = find_successor(key);
-    if (successor == this)
+    if (!(key == this->get_successor()->node_id || in_range(key, this->node_id, this->get_successor()->node_id)))
     {
-        DEBUG("Storing  at " << node_id << " " << key << " " << val);
-        return store_data(key, val);
+        // node *successor = find_successor(key);
+        size_t next_jump_id = closest_preceding_finger(key);
+        while (!coord->check_exist(next_jump_id))
+        {
+            fix_fingers();
+            next_jump_id = closest_preceding_finger(key);
+        }
+        node *next_jump = coord->get_node(next_jump_id);
+
+        DEBUG("Forwarding put request to " << next_jump->node_id << " for " << key << " " << val);
+        return next_jump->put(key, val);
     }
     else
     {
-        DEBUG("Forwarding put request to " << successor->node_id << " for " << key << " " << val);
-        return successor->put(key, val);
+        DEBUG("Storing  at " << node_id << " " << key << " " << val);
+        return this->get_successor()->store_data(key, val);
     }
 }
 
@@ -303,4 +331,9 @@ void node::fix_fingers()
     {
         ftable->set_node(i, find_successor(ftable->get_start(i))->node_id);
     }
+}
+
+void node::print_finger_table()
+{
+    ftable->print_finger_table();
 }
