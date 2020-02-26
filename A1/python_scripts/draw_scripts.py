@@ -171,13 +171,17 @@ def draw_all_graphs(initial_path, naming):
     plt.clf()
 
     # * Avg number of hops vs. nodes
-    x,y = [100,500,1000,2000,5000,10000],[]
+    x, y = [100, 500, 1000, 2000, 5000, 10000], []
+    logs = np.log(x)
+
     for i in range(1, 7):
         lst = read(initial_path + 'nodes_var'+str(i)+"_before.txt")
         y.append(sum(lst) / len(lst))
 
-    plt.plot(x,y,marker='o',label=naming)
-    plt.plot(x,np.log(x),label='log(n)')
+    base = np.log(100)/y[0]
+    const = y[1]*base/np.log(500)
+    plt.plot(x, y, marker='o', label=naming)
+    plt.plot(x, const*np.log(x)/base, marker='o', label='O(log(N))')
 
     plt.title('Avg. number of hops vs num nodes')
     plt.xlabel('Number of nodes')
