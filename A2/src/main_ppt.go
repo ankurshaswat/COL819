@@ -37,6 +37,8 @@ const (
 	changerootMsg = iota //6
 )
 
+var debug bool = false
+
 var msgTypeReverse = make(map[int]string)
 var stateReverse = make(map[int]string)
 
@@ -96,9 +98,25 @@ func (s byLength) Less(i, j int) bool {
 }
 
 func (n *node) runNode() {
+	fmt.Println(
+		"Process:", n.selfID,
+		"State:", stateReverse[n.state],
+		"rec:", n.rec,
+		"parentInd:", n.parentInd,
+		"bestWt:", n.bestWt,
+		"bestNodeInd:", n.bestNodeInd,
+		"testNodeInd:", n.testNodeInd,
+		"name:", n.name,
+		"selfChannel:", n.selfChannel,
+		"mainChannel:", n.mainChannel,
+		"neighbours:", n.neighbours,
+	)
+
 	n.parentInd = -1
 
-	fmt.Println("Process:", n.selfID, " in runNode()")
+	if debug {
+		fmt.Println("Process:", n.selfID, "in runNode()")
+	}
 
 	// * Initialize status array
 	for i := 0; i < len(n.neighbours); i++ {
@@ -126,10 +144,12 @@ func (n *node) runNode() {
 	n.rec = 0
 
 	// * Send <connect,0> to q
-	fmt.Println("Process:", n.selfID, " sending first connect")
+	if debug {
+		fmt.Println("Process:", n.selfID, "Sending 'Connect' Level:", 0, "to:", n.neighbours[qInd])
+	}
 	n.channels[qInd] <- msgStruct{msgType: connect, level: 0, sender: n.selfID}
 
-	// fmt.Println("Process:", n.selfID, " starting to read self channel")
+	// fmt.Println("Process:", n.selfID,"starting to read self channel")
 	for msg := range n.selfChannel {
 		q := msg.sender
 		var qInd int
@@ -137,36 +157,47 @@ func (n *node) runNode() {
 		for i := 0; i < len(n.neighbours); i++ {
 			if n.neighbours[i] == q {
 				qInd = i
+				break
 			}
 		}
 
-		// fmt.Println("Process:", n.selfID, " parent:", n.neighbours[n.parentInd])
+		// fmt.Println("Process:", n.selfID,"parent:", n.neighbours[n.parentInd])
 
 		switch msg.msgType {
 		case connect:
-			fmt.Println("Process:", n.selfID, " 'Connect' Level:", msg.level, " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Connect' Level:", msg.level, "from Process:", msg.sender)
+			}
 
 			if msg.level < n.level {
 				if n.selfID < n.neighbours[qInd] {
 					n.mainChannel <- edge{v1: n.selfID, v2: n.neighbours[qInd], e: n.distances[qInd]}
 				}
 				n.status[qInd] = branch
-				fmt.Println("Process:", n.selfID, " sending initiate same level")
 
-				n.channels[qInd] <- msgStruct{msgType: initiate, level: n.level, fragmentName: n.name, state: n.state, sender: n.selfID}
-				if n.state == find {
-					n.rec = n.rec + 1
+				if debug {
+					fmt.Println("Process:", n.selfID, "Sending 'Initiate' Level:", n.level, "FragmentName:", n.name, "State:", stateReverse[n.state], "to Process:", n.neighbours[qInd])
 				}
+				n.channels[qInd] <- msgStruct{msgType: initiate, level: n.level, fragmentName: n.name, state: n.state, sender: n.selfID}
+				// if n.state == find {
+				// 	n.rec = n.rec + 1
+				// }
 			} else if n.status[qInd] == basic {
 				// * Wait
-				fmt.Println("Process:", n.selfID, " deferring msg")
+				if debug {
+					fmt.Println("Process:", n.selfID, "deferring msg")
+				}
 				n.selfChannel <- msg
 			} else {
-				fmt.Println("Process:", n.selfID, " sending initiate level+1")
+				if debug {
+					fmt.Println("Process:", n.selfID, "Sending 'Initiate' Level:", n.level+1, "FragmentName:", n.distances[qInd], "State:", stateReverse[find], "to Process:", n.neighbours[qInd])
+				}
 				n.channels[qInd] <- msgStruct{msgType: initiate, level: n.level + 1, fragmentName: n.distances[qInd], state: find, sender: n.selfID}
 			}
 		case initiate:
-			fmt.Println("Process:", n.selfID, " 'Initiate' Level:", msg.level, " FragmentName:", msg.fragmentName, " State:", stateReverse[msg.state], " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Initiate' Level:", msg.level, "FragmentName:", msg.fragmentName, "State:", stateReverse[msg.state], "from Process:", msg.sender)
+			}
 
 			n.level = msg.level
 			n.name = msg.fragmentName
@@ -175,51 +206,70 @@ func (n *node) runNode() {
 
 			n.bestNodeInd = -1
 			n.bestWt = math.MaxInt32
-			// n.testNodeInd = -1
+			n.testNodeInd = -1
 
 			for i := range n.neighbours {
 				if n.status[i] == branch && i != qInd {
-					n.channels[i] <- msgStruct{msgType: initiate, level: n.level, fragmentName: n.name, state: n.state, sender: n.selfID}
-					if n.state == find {
-						n.rec = n.rec + 1
+					if debug {
+						fmt.Println("Process:", n.selfID, "Sending 'Initiate' Level:", n.level, "FragmentName:", n.name, "State:", stateReverse[n.state], "to Process:", n.neighbours[i])
 					}
+					n.channels[i] <- msgStruct{msgType: initiate, level: n.level, fragmentName: n.name, state: n.state, sender: n.selfID}
+					// if n.state == find {
+					// 	n.rec = n.rec + 1
+					// }
 				}
 			}
 
 			// * Find Least edge weight
 			if n.state == find {
-				// n.rec = 0
-				fmt.Println("Process:", n.selfID, " finding min")
+				n.rec = 0
+				if debug {
+					fmt.Println("Process:", n.selfID, "finding min")
+				}
 				n.findMin()
-				// fmt.Println("afterFindMin ", stateReverse[n.state])
+				// fmt.Println("afterFindMin", stateReverse[n.state])
 			}
 		case test:
-			fmt.Println("Process:", n.selfID, " 'Test' Level:", msg.level, " FragmentName:", msg.fragmentName, " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Test' Level:", msg.level, "FragmentName:", msg.fragmentName, "from Process:", msg.sender)
+			}
 
 			if msg.level > n.level {
 				// * Wait
-				fmt.Println("Process:", n.selfID, " deferring msg")
+				if debug {
+					fmt.Println("Process:", n.selfID, "deferring msg")
+				}
 				n.selfChannel <- msg
 
 			} else if msg.fragmentName == n.name {
 				// * Internal Edge
 				if n.status[qInd] == basic {
 					n.status[qInd] = branchReject
-					fmt.Println("Process:", n.selfID, " rejecting branch")
+					if debug {
+						fmt.Println("Process:", n.selfID, "rejecting branch")
+					}
 				}
 				if qInd != n.testNodeInd {
-					fmt.Println("Process:", n.selfID, " sending reject msg")
+					if debug {
+						fmt.Println("Process:", n.selfID, "Sending 'Reject'", "to Process:", n.neighbours[qInd])
+					}
 					n.channels[qInd] <- msgStruct{msgType: msgTypeReject, sender: n.selfID}
 				} else {
-					fmt.Println("Process:", n.selfID, " finding min")
+					if debug {
+						fmt.Println("Process:", n.selfID, "finding min")
+					}
 					n.findMin()
 				}
 			} else {
-				fmt.Println("Process:", n.selfID, " sending accept msg")
+				if debug {
+					fmt.Println("Process:", n.selfID, "Sending 'Accept'", "to Process:", n.neighbours[qInd])
+				}
 				n.channels[qInd] <- msgStruct{msgType: accept, sender: n.selfID}
 			}
 		case accept:
-			fmt.Println("Process:", n.selfID, " 'Accept'", " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Accept'", "from Process:", msg.sender)
+			}
 
 			n.testNodeInd = -1
 			if n.distances[qInd] < n.bestWt {
@@ -229,7 +279,9 @@ func (n *node) runNode() {
 			n.report()
 
 		case msgTypeReject:
-			fmt.Println("Process:", n.selfID, " 'Reject'", " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Reject'", "from Process:", msg.sender)
+			}
 
 			if n.status[qInd] == basic {
 				n.status[qInd] = branchReject
@@ -237,47 +289,65 @@ func (n *node) runNode() {
 			n.findMin()
 
 		case report:
-			fmt.Println("Process:", n.selfID, " 'Report' Weight:", msg.weight, " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'Report' Weight:", msg.weight, "from Process:", msg.sender)
+			}
 			// fmt.Println(stateReverse[n.state])
 			if qInd != n.parentInd {
-				n.rec = n.rec - 1
+				// n.rec = n.rec - 1
 				if msg.weight < n.bestWt {
 					n.bestWt = msg.weight
 					n.bestNodeInd = qInd
 				}
-				// n.rec = n.rec + 1
-				fmt.Println("Process:", n.selfID, " reporting")
+				n.rec = n.rec + 1
+				if debug {
+					fmt.Println("Process:", n.selfID, "reporting")
+				}
 				n.report()
-			} else if n.state == find {
-				// * Wait
-				fmt.Println("Process:", n.selfID, " deferring msg")
-				n.selfChannel <- msg
-			} else if msg.weight > n.bestWt {
-				fmt.Println("Process:", n.selfID, " changing root")
-				n.changeRoot()
+			} else {
+				if n.state == find {
+					// * Wait
+					if debug {
+						fmt.Println("Process:", n.selfID, "deferring msg")
+					}
+					n.selfChannel <- msg
+				} else if msg.weight > n.bestWt {
+					if debug {
+						fmt.Println("Process:", n.selfID, "changing root")
+					}
+					n.changeRoot()
 
-			} else if msg.weight == n.bestWt && n.bestWt == math.MaxInt32 {
-				// * stop
-				fmt.Println("Process:", n.selfID, " stopping")
-				// close(n.selfChannel)
-				break
+				} else if msg.weight == n.bestWt && n.bestWt == math.MaxInt32 {
+					// * stop
+					if debug {
+						fmt.Println("Process:", n.selfID, "stopping")
+					}
+					// close(n.selfChannel)
+					break
+				}
 			}
 		case changerootMsg:
-			fmt.Println("Process:", n.selfID, " 'ChangeRoot'", " from Process:", msg.sender)
+			if debug {
+				fmt.Println("Process:", n.selfID, "Received 'ChangeRoot'", "from Process:", msg.sender)
+			}
 			n.changeRoot()
-			// fmt.Println("Process:", n.selfID, " changing root")
+			// fmt.Println("Process:", n.selfID,"changing root")
 
 		default:
-			log.Fatal("Unknown msg type ", msg.msgType)
+			log.Fatal("Unknown msg type", msg.msgType)
 		}
 	}
 
-	fmt.Println("Process:", n.selfID, " exiting")
+	if debug {
+		fmt.Println("Process:", n.selfID, "exiting")
+	}
 
 }
 
 func (n *node) findMin() {
-	fmt.Println("Process:", n.selfID, " in findMin()")
+	if debug {
+		fmt.Println("Process:", n.selfID, "in findMin()")
+	}
 
 	minDist := math.MaxInt32
 	minDistNodeInd := -1
@@ -291,6 +361,9 @@ func (n *node) findMin() {
 
 	if minDistNodeInd != -1 {
 		n.testNodeInd = minDistNodeInd
+		if debug {
+			fmt.Println("Process:", n.selfID, "Sending 'Test' Level:", n.level, "FragmentName:", n.name, "to Process:", n.neighbours[minDistNodeInd])
+		}
 		n.channels[minDistNodeInd] <- msgStruct{msgType: test, level: n.level, fragmentName: n.name, sender: n.selfID}
 	} else {
 		n.testNodeInd = -1
@@ -299,46 +372,68 @@ func (n *node) findMin() {
 }
 
 func (n *node) report() {
-	fmt.Println("Process:", n.selfID, " in report()")
+	if debug {
+		fmt.Println("Process:", n.selfID, "in report()")
+	}
 
-	// count := 0
-	// for i := range n.neighbours {
-	// 	if n.status[i] == branch && i != n.parentInd {
-	// 		count++
-	// 	}
-	// }
+	count := 0
+	for i := range n.neighbours {
+		if n.status[i] == branch && i != n.parentInd {
+			count++
+		}
+	}
 
-	if n.rec == 0 && n.testNodeInd == -1 {
+	if n.rec == count && n.testNodeInd == -1 {
 		n.state = found
-		// fmt.Println("Process:", n.selfID, " n.rec:", n.rec, " n.testNodeInd:", n.testNodeInd, " state:", stateReverse[n.state])
+		if debug {
+			fmt.Println("Process:", n.selfID, "Sending 'Report' Weight:", n.bestWt, "to Process:", n.neighbours[n.parentInd])
+		}
 		n.channels[n.parentInd] <- msgStruct{msgType: report, weight: n.bestWt, sender: n.selfID}
-		fmt.Println("Process:", n.selfID, " sent report to parent")
 	}
 }
 
 func (n *node) changeRoot() {
-	fmt.Println("Process:", n.selfID, " in changeRoot()")
+	if debug {
+		fmt.Println("Process:", n.selfID, "in changeRoot()")
+	}
 
 	if n.status[n.bestNodeInd] == branch {
+		if debug {
+			fmt.Println("Process:", n.selfID, "Sending 'ChangeRoot'", "to Process:", n.neighbours[n.bestNodeInd])
+		}
 		n.channels[n.bestNodeInd] <- msgStruct{msgType: changerootMsg, sender: n.selfID}
 	} else {
-		n.channels[n.bestNodeInd] <- msgStruct{msgType: connect, level: n.level, sender: n.selfID}
 		if n.selfID < n.neighbours[n.bestNodeInd] {
 			n.mainChannel <- edge{v1: n.selfID, v2: n.neighbours[n.bestNodeInd], e: n.distances[n.bestNodeInd]}
 		}
 		n.status[n.bestNodeInd] = branch
+		if debug {
+			fmt.Println("Process:", n.selfID, "Sending 'Connect' Level:", n.level, "to:", n.neighbours[n.bestNodeInd])
+		}
+		n.channels[n.bestNodeInd] <- msgStruct{msgType: connect, level: n.level, sender: n.selfID}
 	}
 }
 
 func main() {
+	fmt.Println("PPT Version")
 
 	// * Get input
 	inputPath := os.Args[1]
-	fmt.Println("Input:", inputPath)
+
+	if len(os.Args) >= 3 {
+		i, _ := strconv.Atoi(os.Args[2])
+		debug = i != 0
+	}
+
+	if debug {
+		fmt.Println("Input:", inputPath)
+	}
 
 	// * Pass input to graph parsing function
 	g := createGraph(inputPath)
-	fmt.Println(g)
+	if debug {
+		fmt.Println(g)
+	}
 
 	// * Loop through each vertice and create input channels
 	numNodes := g.numNodes
@@ -357,6 +452,7 @@ func main() {
 	// loop through each vertice and run a handler function
 	for i := 0; i < numNodes; i++ {
 		neighbours := g.edges[i]
+		// fmt.Println(neighbours)
 		var distances []int
 		var neighbourChannels []chan msgStruct
 		for _, neighbour := range neighbours {
@@ -377,14 +473,14 @@ func main() {
 
 	expectedMsgs = numNodes - 1
 
-	fmt.Println(expectedMsgs)
+	// fmt.Println(expectedMsgs)
 
 	var finalEdges []edge
 
 	for i := 0; i < expectedMsgs; i++ {
 		e := <-mainChannel
 		finalEdges = append(finalEdges, e)
-		// fmt.Println(e.v1, e.v2, e.e)
+		fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
 	}
 
 	// for i := 0; i < numNodes; i++ {
@@ -453,9 +549,11 @@ func createGraph(path string) graph {
 		tE, _ := strconv.Atoi(strings.TrimSpace(res[2]))
 		e := int(tE)
 		// fmt.Println(e, res[2], err)
-		// fmt.Println(v1, v2, e)
+		fmt.Println(v1, v2, e)
 		g.edges[v1] = append(g.edges[v1], v2)
+		fmt.Println(v1, g.edges[v1])
 		g.edges[v2] = append(g.edges[v2], v1)
+		fmt.Println(v2, g.edges[v2])
 
 		if g.distances[v1] == nil {
 			g.distances[v1] = make(map[int]int)
