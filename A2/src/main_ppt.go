@@ -98,19 +98,21 @@ func (s byLength) Less(i, j int) bool {
 }
 
 func (n *node) runNode() {
-	fmt.Println(
-		"Process:", n.selfID,
-		"State:", stateReverse[n.state],
-		"rec:", n.rec,
-		"parentInd:", n.parentInd,
-		"bestWt:", n.bestWt,
-		"bestNodeInd:", n.bestNodeInd,
-		"testNodeInd:", n.testNodeInd,
-		"name:", n.name,
-		"selfChannel:", n.selfChannel,
-		"mainChannel:", n.mainChannel,
-		"neighbours:", n.neighbours,
-	)
+	if debug {
+		fmt.Println(
+			"Process:", n.selfID,
+			"State:", stateReverse[n.state],
+			"rec:", n.rec,
+			"parentInd:", n.parentInd,
+			"bestWt:", n.bestWt,
+			"bestNodeInd:", n.bestNodeInd,
+			"testNodeInd:", n.testNodeInd,
+			"name:", n.name,
+			"selfChannel:", n.selfChannel,
+			"mainChannel:", n.mainChannel,
+			"neighbours:", n.neighbours,
+		)
+	}
 
 	n.parentInd = -1
 
@@ -415,7 +417,7 @@ func (n *node) changeRoot() {
 }
 
 func main() {
-	fmt.Println("PPT Version")
+	// fmt.Println("PPT Version")
 
 	// * Get input
 	inputPath := os.Args[1]
@@ -480,7 +482,7 @@ func main() {
 	for i := 0; i < expectedMsgs; i++ {
 		e := <-mainChannel
 		finalEdges = append(finalEdges, e)
-		fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
+		// fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
 	}
 
 	// for i := 0; i < numNodes; i++ {
@@ -492,7 +494,7 @@ func main() {
 
 	for i := 0; i < expectedMsgs; i++ {
 		e := finalEdges[i]
-		// finalEdges = append(finalEdges, e)
+		finalEdges = append(finalEdges, e)
 		fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
 	}
 
@@ -549,11 +551,11 @@ func createGraph(path string) graph {
 		tE, _ := strconv.Atoi(strings.TrimSpace(res[2]))
 		e := int(tE)
 		// fmt.Println(e, res[2], err)
-		fmt.Println(v1, v2, e)
+		// fmt.Println(v1, v2, e)
 		g.edges[v1] = append(g.edges[v1], v2)
-		fmt.Println(v1, g.edges[v1])
+		// fmt.Println(v1, g.edges[v1])
 		g.edges[v2] = append(g.edges[v2], v1)
-		fmt.Println(v2, g.edges[v2])
+		// fmt.Println(v2, g.edges[v2])
 
 		if g.distances[v1] == nil {
 			g.distances[v1] = make(map[int]int)
