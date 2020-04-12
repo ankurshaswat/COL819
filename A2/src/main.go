@@ -41,6 +41,7 @@ var debug bool = false
 
 var msgTypeReverse = make(map[int]string)
 var stateReverse = make(map[int]string)
+var printMap = make(map[int]string)
 
 func init() {
 	msgTypeReverse[connect] = "connect"
@@ -495,7 +496,8 @@ func main() {
 	for i := 0; i < expectedMsgs; i++ {
 		e := finalEdges[i]
 		finalEdges = append(finalEdges, e)
-		fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
+		fmt.Printf("%s\n", printMap[e.e])
+		// fmt.Printf("(%d, %d, %d)\n", e.v1, e.v2, e.e)
 	}
 
 	// recieve results from all threads into result thread and create save final mst
@@ -548,7 +550,7 @@ func createGraph(path string) graph {
 		tV2, _ := strconv.Atoi(strings.TrimSpace(res[1]))
 		v2 := int(tV2)
 		// fmt.Println(v2, res[1], err)
-		tE, _ := strconv.Atoi(strings.TrimSpace(res[2]))
+		tE, _ := strconv.ParseFloat(strings.TrimSpace(res[2]), 32)
 		e := int(tE)
 		// fmt.Println(e, res[2], err)
 		// fmt.Println(v1, v2, e)
@@ -565,6 +567,7 @@ func createGraph(path string) graph {
 			g.distances[v2] = make(map[int]int)
 		}
 		g.distances[v2][v1] = e
+		printMap[e] = eachline
 	}
 
 	return g

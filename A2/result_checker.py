@@ -94,6 +94,7 @@ class Graph:
 
 
 def read_input(inp_path):
+    resMap = {}
 
     with open(inp_path, 'r') as f:
         data = f.readlines()
@@ -107,21 +108,30 @@ def read_input(inp_path):
             e = int(r[2])
 
             g.addEdge(v1, v2, e)
-    return g
+            resMap[e] = (v1, v2, e)
+    return g, resMap
 
 
-def read_result_and_match(out_path, mst):
+def read_result_and_match(out_path, mst,resMap):
     match = True
     with open(out_path, 'r') as f:
         data = f.readlines()
+
+        if len(data) != len(mst):
+            return False
+
         for i, row in enumerate(data):
             r = row.strip().split('(')[1].split(')')[0].split(',')
             v1 = int(r[0])
             v2 = int(r[1])
             e = int(r[2])
 
+            if resMap[e] != (v1,v2,e):
+                print(resMap[e], (v1, v2, e))
+                return False
+
             if(mst[i] != [v1, v2, e] and mst[i] != [v2, v1, e]):
-                print(mst[i],(v1,v2,e))
+                print(mst[i], (v1, v2, e))
                 return False
 
     return match
@@ -133,9 +143,9 @@ if __name__ == "__main__":
     out = sys.argv[2]
     iteration = int(sys.argv[3])
 
-    g = read_input(inp)
+    g, resMap = read_input(inp)
     mst = g.KruskalMST()
-    if read_result_and_match(out, mst):
+    if read_result_and_match(out, mst, resMap):
         print("Iteration {0} Pass".format(iteration))
     else:
         print("Iteration {0} !!!!! FAIL".format(iteration))

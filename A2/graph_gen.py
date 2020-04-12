@@ -1,6 +1,6 @@
 import numpy as np
 import random
-
+import sys
 # PRE: V for the number of vertices
 # POST: creates a random connected graph with a V-1 edges
 
@@ -37,8 +37,15 @@ def generateRandomConnectedGraph(V):
 if __name__ == "__main__":
 
     N = random.randrange(50, 100+1)
-    max_edges = (N*(N-1))/2
+    if len(sys.argv) > 1:
+        N = int(sys.argv[1])
+
+    max_edges = int((N*(N-1))/2)
     M = random.randrange(N-1, max_edges)
+    if len(sys.argv) > 2:
+        M = int(sys.argv[2])
+        if M > max_edges:
+            M = max_edges
 
     print(N)
     g = generateRandomConnectedGraph(N)
